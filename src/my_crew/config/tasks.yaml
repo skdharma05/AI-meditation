@@ -1,124 +1,119 @@
 meditation_design_task:
   description: >
-    Design a complete {meditation_type} meditation session lasting {duration} minutes.
-    
+    Design a complete {theme} meditation session lasting {duration} minutes.
+
     Requirements:
-    - Create a therapeutic progression from preparation to closing
-    - Include appropriate segments: opening, breathwork, body awareness, guided visualization, silence, affirmations, closing
-    - Ensure smooth transitions between segments
-    - Design for {difficulty_level} practitioners
-    - Focus on the theme: {theme}
-    
-    Consider:
-    - Timing that feels natural and unhurried
-    - Appropriate silence periods
-    - Breathing patterns that promote relaxation
-    - Voice instruction pacing
-    - Optional background music integration
-    
+    - Create a therapeutic progression from opening to closing
+    - Include appropriate segments based on the theme and duration
+    - Design natural transitions between segments
+    - Target {difficulty_level} practitioners
+    - Incorporate both guidance and silence periods
+    - Design appropriate breathing patterns
+
+    Your design should include:
+    - Overall session structure and flow
+    - Segment breakdown with timing
+    - Key elements to include
+    - Breathing pattern recommendations
+    - Silence placement
+    - Music suggestions (if appropriate)
+
   expected_output: >
     A detailed meditation session plan following the MeditationStructure schema, including:
-    - Overall structure and flow
-    - Segment breakdown with timing
-    - Key instruction points
-    - Breathing pattern recommendations
-    - Silence and transition timing
-    - Background music suggestions
-    
+    - Session metadata (title, theme, difficulty, duration)
+    - Segment breakdown with specific timing
+    - Key elements and focus points
+    - Breathing pattern specifications
+    - Music recommendations if applicable
+
     Your output must be structured as a valid MeditationStructure object.
-  agent: meditation_script_generator
+  agent: meditation_designer
 
 content_creation_task:
   description: >
-    Write all voice scripts and instructions for the meditation session designed in the previous task.
-    
+    Write all voice scripts and breathing instructions for the meditation session structure provided.
+
     Requirements:
-    - Write soothing, clear, and calming voice instructions
-    - Use inclusive, non-directive language
-    - Create appropriate opening and closing scripts
-    - Write guided visualizations and affirmations
-    - Ensure proper pacing and natural speech rhythm
-    - Match the tone to {meditation_type} and {difficulty_level}
-    
-    Guidelines:
-    - Use present tense and gentle imperative
-    - Avoid overly complex language
-    - Include natural pauses in speech
-    - Write in a warm, supportive tone
-    - Keep instructions clear and simple
-    
+    - Create soothing, clear voice instructions for each segment
+    - Write in present tense with a warm, supportive tone
+    - Include natural speech pacing and pauses
+    - Craft guidance appropriate for {difficulty_level} level
+    - Match the overall tone to the {theme} theme
+    - Design breath guidance with appropriate cues
+
+    For each segment, create:
+    - Opening instructions
+    - Main guidance text
+    - Transition language
+    - Breath cues (where applicable)
+    - Closing words
+
   expected_output: >
-    Complete voice scripts for each segment formatted as a valid MeditationContent object including:
-    - Opening welcome and preparation instructions
-    - Breathwork guidance
-    - Body awareness scripts
-    - Guided visualization content
-    - Affirmation text
-    - Closing and transition back instructions
-    
-    Your output must conform to the MeditationContent schema with ScriptSegment objects for each section.
-  agent: content_writer
+    Complete meditation content following the MeditationContent schema, including:
+    - Voice instructions for each segment with exact wording
+    - Breath guidance with cues and timing
+    - Silence period instructions
+    - Transition language between segments
+
+    Your output must follow the MeditationContent schema with detailed ScriptSegment objects.
+  agent: content_creator
 
 timing_orchestration_task:
   description: >
-    Calculate precise timing for all meditation elements based on the session design and content.
-    
+    Calculate precise timing for all meditation elements based on the session content.
+
     Requirements:
-    - Calculate exact start/end times for each segment
-    - Determine breathing pattern timing (inhale/exhale/pause)
+    - Calculate exact start and end times for each segment in seconds
+    - Determine timing for all voice instructions
+    - Create precise breathing pattern timing (inhale/exhale/hold/rest)
     - Plan silence durations and placement
-    - Coordinate voice instruction timing
-    - Plan music fade-in/fade-out timing
-    - Ensure total duration matches {duration} minutes exactly
-    
+    - Ensure smooth transitions between elements
+    - Make sure the total duration is exactly {duration} minutes
+
     Consider:
-    - Natural breathing rhythms (typically 4-6 second cycles)
-    - Appropriate silence for reflection
+    - Natural speaking pace (approximately 150 words per minute)
+    - Comfortable breathing rhythms
+    - Appropriate silence durations
     - Transition timing between segments
-    - Voice instruction pacing and delivery speed
-    - Coordination between multiple agents
-    
+    - Coordination between multiple agents (voice, breath, timer, music)
+
   expected_output: >
     Precise timing specification formatted as a valid MeditationTiming object including:
     - Segment start/end times in seconds
-    - Voice instruction timing and duration
+    - Instruction timing for each agent
     - Breathing pattern timing and repetitions
-    - Silence period durations and placement
-    - Music timing and volume changes
-    - Agent coordination timing
-    
-    Your output must conform to the MeditationTiming schema with TimedSegment and TimedInstruction objects for each element.
-  agent: timing_orchestrator
+    - Silence period timing
+    - Music timing (if applicable)
 
-json_generation_task:
+    Your output must conform to the MeditationTiming schema with TimedSegment and TimedInstruction objects.
+  agent: timing_specialist
+
+session_formatting_task:
   description: >
-    Convert the complete meditation session into a structured JSON format that can be executed by the meditation app.
-    
+    Convert the complete meditation session with content and timing into a structured JSON format for execution.
+
     Requirements:
-    - Follow the provided meditation session schema exactly (see: session_schema.json)
-    - The output MUST be a valid JSON object matching all required fields and types in the schema
-    - Validate your output against the schema before returning
-    - Include all voice scripts, timing, and coordination data
-    - Specify actions for voice, breath, timer, and music agents
-    - Ensure all timing is precisely calculated
-    - Make the JSON executable and complete
-    - Do not include markdown or code block formatting, only raw JSON
-    
-    Agent Actions to Include:
-    - VoiceAgent: speak, pause, fade
+    - Create a valid MeditationSession object following the schema exactly
+    - Include all segments with precise start and end times
+    - Define all agent actions with exact timing and parameters
+    - Ensure all voice text is properly formatted
+    - Include complete breath guidance parameters
+    - Add timer silence periods
+    - Include music instructions if applicable
+    - Ensure total duration matches {duration} minutes exactly
+
+    Agent actions to include:
+    - VoiceAgent: speak, pause
     - BreathAgent: inhale_cue, exhale_cue, breathing_cycle
     - TimerAgent: silence, transition_cue, segment_timer
     - MusicAgent: play, fade_in, fade_out, volume_change
-    
+
   expected_output: >
-    A complete, valid MeditationSession object that includes:
+    A complete, valid MeditationSession object in JSON format that includes:
     - Session metadata (title, duration, theme, difficulty)
-    - Segment breakdown with precise timing
-    - Agent action specifications with parameters
-    - All voice scripts and instruction text
-    - Breathing pattern specifications
-    - Music and timing coordination
-    - Complete executable format for the meditation app
-    
-    Your output must conform exactly to the MeditationSession schema with properly formatted Segment and Action objects.
-  agent: json_formatter
+    - Segment definitions with timing
+    - Agent action specifications
+    - All parameters needed for execution
+
+    The output JSON must conform exactly to the MeditationSession schema and be ready for direct execution by the frontend.
+  agent: session_formatter

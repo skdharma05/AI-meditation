@@ -1,6 +1,3 @@
-
-
-
 import os
 import uuid
 import json
@@ -13,9 +10,6 @@ from pydantic import BaseModel
 from typing import Optional
 from my_crew.main import generate_custom_meditation
 from pymongo import MongoClient
-from my_crew.models import MeditationSession
-
-
 
 # --- Configuration ---
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
@@ -33,7 +27,7 @@ app = FastAPI()
 
 # --- Models ---
 class MeditationRequest(BaseModel):
-    meditation_type: str = "mindfulness"
+    meditation_type: str = "clarity and peace"  # Keep this as meditation_type for backward compatibility
     duration: int = 8
     difficulty: str = "beginner"
     theme: str = "clarity and peace"
@@ -45,7 +39,7 @@ class MeditationStatus(BaseModel):
     error: Optional[str] = None
 
 # --- Background Job ---
-def run_generation_job(job_id: str, req: MeditationRequest):
+def run_generation_job(job_id: str, req: MeditationRequest, user_id= None):
     try:
         r.set(f"job:{job_id}:status", "running")
         r.set(f"job:{job_id}:progress", json.dumps({"stage": "starting", "details": "Initializing agents"}))
@@ -76,25 +70,12 @@ def run_generation_job(job_id: str, req: MeditationRequest):
         finally:
             sys.stdout = old_stdout
             sys.stderr = old_stderr
-        # The result is a MeditationSession Pydantic model
-        if isinstance(result, MeditationSession):
-            session_data = result.dict()
-        elif hasattr(result, 'dict'):
-            session_data = result.dict()
-        else:
-            session_data = result
-        doc = {
-            "_id": job_id,
-            "created_at": time.time(),
-            "meditation_type": req.meditation_type,
-            "duration": req.duration,
-            "difficulty": req.difficulty,
-            "theme": req.theme,
-            "session": session_data
-        }
-        collection.insert_one(doc)
+
+
+
+        res_doc = collection.insert_one(dict(**result.model_dump(), user_id=user_id, job_id=job_id))
         r.set(f"job:{job_id}:status", "completed")
-        r.set(f"job:{job_id}:progress", json.dumps({"stage": "completed", "details": "Session generated"}))
+        r.set(f"job:{job_id}:progress", json.dumps({"stage": "completed", "details": "Session generated", "session": str(res_doc.inserted_id)}))
     except Exception as e:
         r.set(f"job:{job_id}:status", "failed")
         r.set(f"job:{job_id}:error", str(e))
@@ -104,13 +85,13 @@ def sse_event_generator(job_id: str, heartbeat_interval=5):
     last_status = None
     last_progress = None
     last_heartbeat = time.time()
-    
+
     while True:
         status = r.get(f"job:{job_id}:status")
         progress = r.get(f"job:{job_id}:progress")
         now = time.time()
         event_sent = False
-        
+
         # Send updates when status or progress changes
         if status != last_status or progress != last_progress:
             data = {"status": status}
@@ -127,16 +108,16 @@ def sse_event_generator(job_id: str, heartbeat_interval=5):
             last_status = status
             last_progress = progress
             event_sent = True
-            
+
         # Heartbeat: send every heartbeat_interval seconds if no other event was sent
         if not event_sent and now - last_heartbeat >= heartbeat_interval:
             yield f"data: {json.dumps({'status': status or 'running', 'heartbeat': True})}\n\n"
             last_heartbeat = now
             event_sent = True
-            
+
         if status in ("completed", "failed"):
             break
-            
+
         time.sleep(1)
 
 # --- API Endpoints ---
@@ -159,19 +140,21 @@ def check_status(job_id: str):
 @app.get("/status/stream/{job_id}")
 def stream_status(job_id: str, request: Request, heartbeat_seconds: int = 5):
     """SSE endpoint for job status updates with heartbeat to keep connection alive.
-    
+
     Args:
         job_id: The ID of the job to stream status updates for
         request: The FastAPI request object
         heartbeat_seconds: How often to send heartbeat events (in seconds)
     """
-    return StreamingResponse(sse_event_generator(job_id, heartbeat_interval=heartbeat_seconds), 
+    return StreamingResponse(sse_event_generator(job_id, heartbeat_interval=heartbeat_seconds),
                              media_type="text/event-stream")
 
 @app.get("/result/{job_id}")
 def get_result(job_id: str):
-    doc = collection.find_one({"_id": job_id})
+    doc = collection.find_one({"job_id": job_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Result not found or not ready yet")
     # Only return the session object (the validated meditation session)
-    return doc["session"]
+    if "_id" in doc:
+        del doc["_id"]
+    return doc
