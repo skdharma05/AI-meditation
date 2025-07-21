@@ -40,13 +40,16 @@ content_creation_task:
     - Craft guidance appropriate for {difficulty_level} level
     - Match the overall tone to the {theme} theme
     - Design breath guidance with appropriate cues
+    - IMPORTANT: Create detailed, specific text for EACH voice instruction and breath cue that will be used directly as action parameters
 
     For each segment, create:
     - Opening instructions
     - Main guidance text
     - Transition language
-    - Breath cues (where applicable)
+    - Breath cues (where applicable) with specific text for inhale/exhale
     - Closing words
+    
+    Be extremely specific with exact wording for each instruction as these texts will be used directly as parameters for actions in the final meditation session.
 
   expected_output: >
     Complete meditation content following the MeditationContent schema, including:
@@ -69,6 +72,11 @@ timing_orchestration_task:
     - Plan silence durations and placement
     - Ensure smooth transitions between elements
     - Make sure the total duration is exactly {duration} minutes
+    - CRITICAL: Include detailed parameters for each instruction based on type:
+      * VoiceAgent "speak" instructions need "text" parameter
+      * BreathAgent instructions need appropriate parameters (phase, timing values)
+      * TimerAgent instructions need purpose/type parameters
+      * MusicAgent instructions need track and volume parameters
 
     Consider:
     - Natural speaking pace (approximately 150 words per minute)
@@ -76,6 +84,7 @@ timing_orchestration_task:
     - Appropriate silence durations
     - Transition timing between segments
     - Coordination between multiple agents (voice, breath, timer, music)
+    - Every instruction must have properly configured parameters
 
   expected_output: >
     Precise timing specification formatted as a valid MeditationTiming object including:
@@ -102,11 +111,25 @@ session_formatting_task:
     - Include music instructions if applicable
     - Ensure total duration matches {duration} minutes exactly
 
-    Agent actions to include:
-    - VoiceAgent: speak, pause
-    - BreathAgent: inhale_cue, exhale_cue, breathing_cycle
-    - TimerAgent: silence, transition_cue, segment_timer
-    - MusicAgent: play, fade_in, fade_out, volume_change
+    Agent actions to include with their REQUIRED parameters:
+    - VoiceAgent: 
+      * speak: requires "text" parameter with the exact words to speak
+      * pause: optional "reason" parameter explaining the pause
+    
+    - BreathAgent: 
+      * inhale_cue: requires "phase" parameter set to "inhale" and optional "text" parameter
+      * exhale_cue: requires "phase" parameter set to "exhale" and optional "text" parameter
+      * breathing_cycle: requires "inhale_seconds", "hold_seconds", "exhale_seconds", "rest_seconds", and "repetitions" parameters
+    
+    - TimerAgent: 
+      * silence: requires "type" parameter specifying the type of silence (reflection, rest, transition)
+      * transition_cue: optional "sound" parameter
+      * segment_timer: optional timing parameters
+    
+    - MusicAgent: 
+      * play/fade_in/fade_out/volume_change: requires "track_id" parameter and optional "volume" parameter
+
+    IMPORTANT: Each action MUST include the appropriate parameters object with all required fields based on its type.
 
   expected_output: >
     A complete, valid MeditationSession object in JSON format that includes:

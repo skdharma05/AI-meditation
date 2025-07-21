@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 
 from pydantic import BaseModel
 from typing import Optional
-from my_crew.main import generate_custom_meditation
+from med_crew.main import generate_custom_meditation
 from pymongo import MongoClient
 
 # --- Configuration ---

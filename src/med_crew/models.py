@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, validator
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from enum import Enum
 
 """
@@ -44,6 +44,48 @@ class SegmentType(str, Enum):
     custom = "custom"
     grounding = "grounding"
     deepening = "deepening"
+
+"""
+Action Parameters Models
+"""
+
+class ActionParameters(BaseModel):
+    """Base parameters for actions"""
+    pass
+
+class SpeakParameters(ActionParameters):
+    """Parameters for speak action"""
+    text: str = Field(..., description="The text to be spoken")
+
+class PauseParameters(ActionParameters):
+    """Parameters for pause action"""
+    reason: Optional[str] = Field(None, description="Reason for the pause")
+
+class BreathCueParameters(ActionParameters):
+    """Parameters for breath cues"""
+    phase: str = Field(..., description="Breath phase (inhale, exhale)")
+    sound: Optional[str] = Field(None, description="Sound cue to play")
+    text: Optional[str] = Field(None, description="Optional text cue")
+
+class BreathingCycleParameters(ActionParameters):
+    """Parameters for breathing cycle"""
+    inhale_seconds: int = Field(..., description="Inhale duration")
+    hold_seconds: int = Field(0, description="Hold duration")
+    exhale_seconds: int = Field(..., description="Exhale duration")
+    rest_seconds: int = Field(0, description="Rest duration")
+    repetitions: int = Field(..., description="Number of repetitions")
+    inhale_cue: Optional[str] = Field(None, description="Inhale cue text")
+    exhale_cue: Optional[str] = Field(None, description="Exhale cue text")
+
+class SilenceParameters(ActionParameters):
+    """Parameters for silence periods"""
+    type: str = Field(..., description="Type of silence (reflection, rest, transition)")
+
+class MusicParameters(ActionParameters):
+    """Parameters for music actions"""
+    track_id: Optional[str] = Field(None, description="ID of the music track")
+    volume: Optional[float] = Field(None, description="Volume level (0.0-1.0)")
+    fade_duration: Optional[int] = Field(None, description="Duration of fade in/out in seconds")
 
 """
 Task 1: Meditation Design Models
@@ -126,7 +168,10 @@ class TimedInstruction(BaseModel):
     start_time_seconds: int = Field(..., ge=0, description="Start time in seconds")
     duration_seconds: int = Field(..., ge=0, description="Duration in seconds")
     content: Optional[str] = Field(None, description="Content of instruction (e.g., voice text)")
-    parameters: Optional[Dict[str, Any]] = Field(None, description="Additional parameters")
+    parameters: Union[SpeakParameters, PauseParameters, BreathCueParameters, 
+                      BreathingCycleParameters, SilenceParameters, MusicParameters] = Field(
+        ..., description="Type-specific parameters for this instruction."
+    )
 
 class TimedSegment(BaseModel):
     """A segment with precisely timed instructions"""
@@ -156,51 +201,16 @@ class MeditationTiming(BaseModel):
 Task 4: Final Meditation Session Model
 """
 
-class ActionParameters(BaseModel):
-    """Base parameters for actions"""
-    pass
-
-class SpeakParameters(ActionParameters):
-    """Parameters for speak action"""
-    text: str = Field(..., description="The text to be spoken")
-
-class PauseParameters(ActionParameters):
-    """Parameters for pause action"""
-    reason: Optional[str] = Field(None, description="Reason for the pause")
-
-class BreathCueParameters(ActionParameters):
-    """Parameters for breath cues"""
-    phase: str = Field(..., description="Breath phase (inhale, exhale)")
-    sound: Optional[str] = Field(None, description="Sound cue to play")
-    text: Optional[str] = Field(None, description="Optional text cue")
-
-class BreathingCycleParameters(ActionParameters):
-    """Parameters for breathing cycle"""
-    inhale_seconds: int = Field(..., description="Inhale duration")
-    hold_seconds: int = Field(0, description="Hold duration")
-    exhale_seconds: int = Field(..., description="Exhale duration")
-    rest_seconds: int = Field(0, description="Rest duration")
-    repetitions: int = Field(..., description="Number of repetitions")
-    inhale_cue: Optional[str] = Field(None, description="Inhale cue text")
-    exhale_cue: Optional[str] = Field(None, description="Exhale cue text")
-
-class SilenceParameters(ActionParameters):
-    """Parameters for silence periods"""
-    type: str = Field(..., description="Type of silence (reflection, rest, transition)")
-
-class MusicParameters(ActionParameters):
-    """Parameters for music actions"""
-    track_id: Optional[str] = Field(None, description="ID of the music track")
-    volume: Optional[float] = Field(None, description="Volume level (0.0-1.0)")
-    fade_duration: Optional[int] = Field(None, description="Duration of fade in/out in seconds")
-
 class Action(BaseModel):
     """An action performed by an agent during a meditation segment."""
     agent: AgentType = Field(..., description="The agent responsible for the action.")
     type: ActionType = Field(..., description="The type of action performed.")
     start_time_seconds: int = Field(..., ge=0, description="Start time of the action in seconds.")
     duration_seconds: int = Field(..., ge=0, description="Duration of the action in seconds.")
-    parameters: Dict[str, Any] = Field(default_factory=dict, description="Additional parameters for the action.")
+    parameters: Union[SpeakParameters, PauseParameters, BreathCueParameters, 
+                      BreathingCycleParameters, SilenceParameters, MusicParameters] = Field(
+        ..., description="Type-specific parameters for this action."
+    )
 
 class Segment(BaseModel):
     """A segment of the meditation session, such as opening, breathwork, etc."""
