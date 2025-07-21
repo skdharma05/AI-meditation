@@ -8,11 +8,11 @@ from med_crew.models import (
     MeditationTiming,
 )
 from med_crew.tools import (
-    MeditationTimingTool, 
-    BreathingPatternTool, 
-    MeditationContentTool, 
+    MeditationTimingTool,
+    BreathingPatternTool,
+    MeditationContentTool,
     JSONValidationTool,
-    ActionParameterGeneratorTool
+    ActionParameterGeneratorTool,
 )
 
 from typing import List
@@ -39,7 +39,7 @@ class MyCrew:
         return Agent(
             config=self.agents_config["meditation_designer"],  # type: ignore[index]
             verbose=True,
-            tools=[MeditationTimingTool()]
+            tools=[MeditationTimingTool()],
         )
 
     @agent
@@ -48,7 +48,7 @@ class MyCrew:
         return Agent(
             config=self.agents_config["content_creator"],  # type: ignore[index]
             verbose=True,
-            tools=[MeditationContentTool(), BreathingPatternTool()]
+            tools=[MeditationContentTool(), BreathingPatternTool(), ActionParameterGeneratorTool()],
         )
 
     @agent
@@ -57,7 +57,7 @@ class MyCrew:
         return Agent(
             config=self.agents_config["timing_specialist"],  # type: ignore[index]
             verbose=True,
-            tools=[MeditationTimingTool(), BreathingPatternTool()]
+            tools=[MeditationTimingTool(), BreathingPatternTool(), ActionParameterGeneratorTool()],
         )
 
     @agent
@@ -66,7 +66,7 @@ class MyCrew:
         return Agent(
             config=self.agents_config["session_formatter"],  # type: ignore[index]
             verbose=True,
-            tools=[JSONValidationTool(), ActionParameterGeneratorTool()]
+            tools=[JSONValidationTool(), ActionParameterGeneratorTool()],
         )
 
     @task

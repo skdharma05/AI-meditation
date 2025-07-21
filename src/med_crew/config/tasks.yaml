@@ -5,9 +5,11 @@ meditation_design_task:
     Requirements:
     - Create a therapeutic progression from opening to closing
     - Include appropriate segments based on the theme and duration
+    - Use ONLY these valid segment types: "opening", "breathwork", "body_awareness", "visualization", 
+      "silence", "affirmation", "closing", "custom", "grounding", "deepening", "guidance"
     - Design natural transitions between segments
     - Target {difficulty_level} practitioners
-    - Incorporate both guidance and silence periods
+    - Incorporate both guidance segments and silence periods
     - Design appropriate breathing patterns
 
     Your design should include:
@@ -41,6 +43,8 @@ content_creation_task:
     - Match the overall tone to the {theme} theme
     - Design breath guidance with appropriate cues
     - IMPORTANT: Create detailed, specific text for EACH voice instruction and breath cue that will be used directly as action parameters
+    - CRITICAL: Use ONLY these valid segment types: "opening", "breathwork", "body_awareness", "visualization", 
+      "silence", "affirmation", "closing", "custom", "grounding", "deepening", "guidance"
 
     For each segment, create:
     - Opening instructions
@@ -99,7 +103,8 @@ timing_orchestration_task:
 
 session_formatting_task:
   description: >
-    Convert the complete meditation session with content and timing into a structured JSON format for execution.
+    Convert the complete meditation session with content and timing into a structured JSON format for execution. 
+    Focus on performance and efficiency - optimize for speed.
 
     Requirements:
     - Create a valid MeditationSession object following the schema exactly
@@ -110,26 +115,27 @@ session_formatting_task:
     - Add timer silence periods
     - Include music instructions if applicable
     - Ensure total duration matches {duration} minutes exactly
+    - OPTIMIZE FOR PERFORMANCE: Use simplified parameters when possible
 
-    Agent actions to include with their REQUIRED parameters:
+    Agent actions to include with their REQUIRED parameters (keep minimal for performance):
     - VoiceAgent: 
-      * speak: requires "text" parameter with the exact words to speak
+      * speak: requires "text" parameter with the exact words to speak (keep concise)
       * pause: optional "reason" parameter explaining the pause
     
     - BreathAgent: 
-      * inhale_cue: requires "phase" parameter set to "inhale" and optional "text" parameter
-      * exhale_cue: requires "phase" parameter set to "exhale" and optional "text" parameter
-      * breathing_cycle: requires "inhale_seconds", "hold_seconds", "exhale_seconds", "rest_seconds", and "repetitions" parameters
+      * inhale_cue: requires "phase" parameter set to "inhale" and "text" parameter
+      * exhale_cue: requires "phase" parameter set to "exhale" and "text" parameter
+      * breathing_cycle: requires minimal values for "inhale_seconds", "hold_seconds", "exhale_seconds", "rest_seconds", and "repetitions" parameters
     
     - TimerAgent: 
       * silence: requires "type" parameter specifying the type of silence (reflection, rest, transition)
-      * transition_cue: optional "sound" parameter
-      * segment_timer: optional timing parameters
+      * transition_cue: include minimal parameters
+      * segment_timer: include minimal parameters
     
     - MusicAgent: 
-      * play/fade_in/fade_out/volume_change: requires "track_id" parameter and optional "volume" parameter
+      * play/fade_in/fade_out/volume_change: only requires "track_id" and "volume" parameters
 
-    IMPORTANT: Each action MUST include the appropriate parameters object with all required fields based on its type.
+    IMPORTANT: Ensure all actions have valid parameters, but optimize for processing speed and minimize content volume.
 
   expected_output: >
     A complete, valid MeditationSession object in JSON format that includes:

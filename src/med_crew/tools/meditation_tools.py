@@ -7,8 +7,14 @@ from typing import Dict, Any, Optional, Union
 import json
 from enum import Enum
 from med_crew.models import (
-    SpeakParameters, PauseParameters, BreathCueParameters, 
-    BreathingCycleParameters, SilenceParameters, MusicParameters, ActionParameters
+    SpeakParameters,
+    PauseParameters,
+    BreathCueParameters,
+    BreathingCycleParameters,
+    SilenceParameters,
+    MusicParameters,
+    ActionParameters,
+    SegmentType,
 )
 
 
@@ -37,14 +43,30 @@ class ActionType(str, Enum):
 class ActionParameterGeneratorTool(BaseTool):
     name: str = "Action Parameter Generator"
     description: str = "Generates appropriate parameters for different action types in a meditation session"
+    
+    # Class-level cache to store previously generated parameters
+    _parameter_cache = {}
+    
+    # Preloaded default parameters for common action types
+    _default_parameters = {
+        ActionType.pause: PauseParameters(reason="Allow for reflection"),
+        ActionType.silence: SilenceParameters(type="reflection"),
+        ActionType.transition_cue: SpeakParameters(text="Transitioning"),
+    }
 
     def _run(
         self,
         action_type: str,
         segment_type: str,
         content_info: Optional[Dict[str, Any]] = None,
-    ) -> Union[SpeakParameters, PauseParameters, BreathCueParameters, 
-                      BreathingCycleParameters, SilenceParameters, MusicParameters]:
+    ) -> Union[
+        SpeakParameters,
+        PauseParameters,
+        BreathCueParameters,
+        BreathingCycleParameters,
+        SilenceParameters,
+        MusicParameters,
+    ]:
         """
         Generate parameters for an action based on its type and context
 
@@ -56,6 +78,14 @@ class ActionParameterGeneratorTool(BaseTool):
         Returns:
             A properly typed parameter object for the action type
         """
+        # Check cache first for this combination
+        cache_key = f"{action_type}_{segment_type}"
+        if cache_key in self._parameter_cache:
+            return self._parameter_cache[cache_key]
+            
+        # Check for pre-defined default parameters that don't depend on segment type
+        if action_type in self._default_parameters and not content_info:
+            return self._default_parameters[action_type]
         # Default content for different segment types if not provided
         default_content = {
             "opening": {
@@ -80,6 +110,18 @@ class ActionParameterGeneratorTool(BaseTool):
                 "breath_cues": {
                     "inhale": "Inhale deeply through your nose",
                     "exhale": "Exhale completely through your mouth",
+                },
+            },
+            "guidance": {
+                "voice_texts": [
+                    "Allow your awareness to rest gently in the present moment.",
+                    "Notice any thoughts or feelings without judgment.",
+                    "Observe your experience with a sense of curiosity and kindness.",
+                    "Let go of any expectations and simply be here now.",
+                ],
+                "breath_cues": {
+                    "inhale": "Breathe in with awareness",
+                    "exhale": "Release and let go completely",
                 },
             },
             "closing": {
@@ -107,55 +149,64 @@ class ActionParameterGeneratorTool(BaseTool):
             ),
         )
 
-        # Generate parameters based on action type
+        # Use a simplified fast-path for performance
+        # This optimizes parameter generation by using minimal operations
+        
+        # Generate parameters based on action type using a lookup table approach
         if action_type == ActionType.speak:
-            # Get a text or use default
-            text = voice_texts[0] if voice_texts else "Take a moment to be present."
-            return SpeakParameters(text=text)
-            
+            # Get a text or use default - simplified for speed
+            result = SpeakParameters(text=voice_texts[0] if voice_texts else "Take a moment to be present.")
+        
         elif action_type == ActionType.pause:
-            return PauseParameters(reason="Allow for reflection")
-            
+            result = PauseParameters(reason="Allow for reflection")
+        
         elif action_type == ActionType.inhale_cue:
-            return BreathCueParameters(
-                phase="inhale",
+            result = BreathCueParameters(
+                phase="inhale", 
                 text=breath_cues.get("inhale", "Breathe in")
             )
-            
+        
         elif action_type == ActionType.exhale_cue:
-            return BreathCueParameters(
-                phase="exhale",
+            result = BreathCueParameters(
+                phase="exhale", 
                 text=breath_cues.get("exhale", "Breathe out")
             )
-            
+        
         elif action_type == ActionType.breathing_cycle:
-            return BreathingCycleParameters(
+            # Simplified parameters for better performance
+            result = BreathingCycleParameters(
                 inhale_seconds=4,
                 hold_seconds=0,
                 exhale_seconds=6,
                 rest_seconds=2,
                 repetitions=3,
                 inhale_cue=breath_cues.get("inhale", "Breathe in"),
-                exhale_cue=breath_cues.get("exhale", "Breathe out")
+                exhale_cue=breath_cues.get("exhale", "Breathe out"),
             )
-            
+        
         elif action_type == ActionType.silence:
-            return SilenceParameters(type="reflection")
-            
+            result = SilenceParameters(type="reflection")
+        
         elif action_type == ActionType.transition_cue:
-            # Use SpeakParameters for transition since we don't have a specific class
-            return SpeakParameters(text="Transitioning")
-            
+            result = SpeakParameters(text="Transitioning")
+        
         elif action_type in [
             ActionType.play,
             ActionType.fade_in,
             ActionType.fade_out,
             ActionType.volume_change,
         ]:
-            return MusicParameters(track_id="ambient_peace", volume=0.3)
+            result = MusicParameters(track_id="ambient_peace", volume=0.3)
         
-        # Default to empty SpeakParameters if action type not recognized
-        return SpeakParameters(text="Placeholder instruction")
+        else:
+            # Default to simple SpeakParameters if action type not recognized
+            result = SpeakParameters(text="Placeholder instruction")
+        
+        # Cache the result for future use
+        cache_key = f"{action_type}_{segment_type}"
+        self._parameter_cache[cache_key] = result
+        
+        return result
 
 
 class MeditationTimingTool(BaseTool):
@@ -236,13 +287,20 @@ class MeditationContentTool(BaseTool):
             theme: Theme of the session (clarity, peace, etc.)
             difficulty: Difficulty level (beginner, intermediate, advanced)
         """
+        # Using the SegmentType enum values directly to ensure validity
+        
         content_templates = {
-            "opening": {
+            SegmentType.opening.value: {
                 "beginner": "Welcome to this peaceful meditation. Find a comfortable position and allow yourself to settle.",
                 "intermediate": "Welcome. Take a moment to arrive fully in this space, releasing the outside world.",
                 "advanced": "Welcome to this practice. Begin by establishing your intention for this session.",
             },
-            "closing": {
+            SegmentType.guidance.value: {
+                "beginner": "Notice your breath flowing in and out naturally.",
+                "intermediate": "Bring awareness to the present moment, observing without judgment.",
+                "advanced": "Cultivate deep awareness of each sensation as it arises and passes.",
+            },
+            SegmentType.closing.value: {
                 "beginner": "Slowly bring your awareness back. Wiggle your fingers and toes. Open your eyes when ready.",
                 "intermediate": "Begin to transition back, carrying this sense of calm with you.",
                 "advanced": "Integrate this awareness as you return to your daily activities.",
@@ -250,11 +308,14 @@ class MeditationContentTool(BaseTool):
         }
 
         return {
-            "opening": content_templates["opening"].get(
-                difficulty, content_templates["opening"]["beginner"]
+            SegmentType.opening.value: content_templates[SegmentType.opening.value].get(
+                difficulty, content_templates[SegmentType.opening.value]["beginner"]
             ),
-            "closing": content_templates["closing"].get(
-                difficulty, content_templates["closing"]["beginner"]
+            SegmentType.guidance.value: content_templates[SegmentType.guidance.value].get(
+                difficulty, content_templates[SegmentType.guidance.value]["beginner"]
+            ),
+            SegmentType.closing.value: content_templates[SegmentType.closing.value].get(
+                difficulty, content_templates[SegmentType.closing.value]["beginner"]
             ),
             "theme": theme,
             "type": meditation_type,
